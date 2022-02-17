@@ -479,6 +479,18 @@ Running it all at once for web^
 ```
 Running it all for the db set up^
 
+We can also automate the upgrade-update process:
+```
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+```
+
 ## ULTIMATE AUTOMATION!!
 We can put all of these playbooks in playbooks into ONE playbook that will completely install app and db with one click:
 Playbook name = `master_import_playbooks.yml`
