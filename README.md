@@ -505,5 +505,3 @@ Playbook name = `master_import_playbooks.yml`
 ```
 ![The beauty of DevOps!](https://user-images.githubusercontent.com/98178943/154564715-215163e8-8657-41ff-bb78-8a8fe17dd3ba.png)
 ![ezgif com-gif-maker](https://user-images.githubusercontent.com/98178943/154567191-b3c8ead2-d0aa-4b81-9b6a-913ffa5ceb59.gif)
-
-**The beauty of DevOps!**
