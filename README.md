@@ -1,5 +1,7 @@
 # IAC with Ansible
 
+![My project (12)](https://user-images.githubusercontent.com/98178943/154736652-fa4a2f9e-2455-4b4e-8063-9337db10dfa7.png)
+
 
 ### Let's create Vagrantfile to create Three VMs for Ansible architecture
 #### Ansible controller and Ansible agents 
@@ -373,10 +375,10 @@ Check the status of mongod by doing `ansible db -a "systemctl status mongodb"`
      shell: sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv D68FA50FEA312927; echo "deb https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodbs
 
    - name: restart mongod
-     service: name=mongod state=restarted
+     service: name=mongodb state=restarted
 
    - name: mongod enable
-     service: name=mongod enabled=yes
+     service: name=mongodb enabled=yes
 ```
 
 ## Add reverse proxy to web app
