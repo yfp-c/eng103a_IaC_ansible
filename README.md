@@ -305,7 +305,7 @@ Creating a playbook to run script:
   - name: Copy app folder from local to web node
     synchronize:
       src: /home/vagrant/app/
-      dest: /home/vagrant/app
+      dest: /home/vagrant/
 
   - name: Add nodejs apt key
     apt_key:
@@ -536,40 +536,76 @@ We have created a secure authentication method using ansible for hybrid cloud.
 
 We have provided aws credentials that were encrypted, so we did not need to expose the keys at any stage.
 
-We also need to copy our pem file into the .ssh folder in the controller to access the EC2 instance.
+Enter into /home/vagrant/.ssh and enter `ssh-keygen -t rsa -b 4096` to generate the pub and private keys which we'll need later on.
 
 Create a playbook called `ec2.yml`
 ```
+
 ---
 - hosts: localhost
   connection: local
   gather_facts: yes
   vars_files:
   - /etc/ansible/group_vars/all/pass.yml
+  vars:
+    key_name: id_rsa
+    region: eu-west-1
+    image: ami-07d8796a2b0f8d29c
+    id: "yacob-ansible5"
+    sec_group: "{{ id }}-sec"
   tasks:
-  - ec2:
-      aws_access_key: "{{aws_access_key}}"
-      aws_secret_key: "{{aws_secret_key}}"
-      key_name: pem file name
-      instance_type: t2.micro
-      image: ami-01d45cfaa26f10388
-      wait: yes
-      group: eng103a_name
-      region: "eu-west-1"
-      count: 1
-      vpc_subnet_id: subnet-xxxxxx
-      assign_public_ip: yes
-      instance_tags:
-        Name: Yacob
-        os: ubuntu
+    - name: Provisioning EC2 instances
+      block:
+      - name: Upload public key to AWS
+        ec2_key:
+          name: "{{ key_name }}"
+          key_material: "{{ lookup('file', '/home/vagrant/.ssh/id_rsa.pub') }}"
+          region: "{{ region }}"
+          aws_access_key: "{{aws_access_key}}"
+          aws_secret_key: "{{aws_secret_key}}"
+      - name: Create security group
+        ec2_group:
+          name: "{{ sec_group }}"
+          description: "Sec group for app {{ id }}"
+          region: "{{ region }}"
+          aws_access_key: "{{aws_access_key}}"
+          aws_secret_key: "{{aws_secret_key}}"
+          rules:
+            - proto: tcp
+              ports:
+                - 22
+              cidr_ip: 0.0.0.0/0
+              rule_desc: allow all on ssh port
+            - proto: tcp
+              ports:
+                - 80
+              cidr_ip: 0.0.0.0/0
+              rule_desc: allow all on http port
+        register: result_sec_group
+      - name: Provision instance(s)
+        ec2:
+          aws_access_key: "{{aws_access_key}}"
+          aws_secret_key: "{{aws_secret_key}}"
+          key_name: "{{ key_name }}"
+          id: "{{ id }}"
+          group_id: "{{ result_sec_group.group_id }}"
+          image: "{{ image }}"
+          instance_type: t2.micro
+          region: "{{ region }}"
+          wait: true
+          count: 1
+          instance_tags:
+            name: eng103a_yacob_ansible
+      tags: ['never', 'create_ec2']
+
 ```
-Enter `sudo ansible-playbook start_ec2.yml --connection=local -e "ansible_python_interpreter=/usr/bin/python3" --ask-vault-pass`
+Enter `sudo ansible-playbook ec2.yml --ask-vault-pass --tags create_ec2 --tags=ec2-create -e "ansible_python_interpreter=/usr/bin/python3"`
 
 Once that is done, we can edit the hosts file to ssh into the instance we made.
 An example:
 ```
 [aws]
-54.74.xx.xx ssh_connection=ssh ansible_user=ubuntu ansible_ssh_private_key_file=/etc/ansible/.ssh/filename.pem
+54.74.xx.xx ssh_connection=ssh ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/.ssh/id_rsa
 ```
 
 To test the connection, enter:
@@ -578,3 +614,5 @@ To test the connection, enter:
 This image should pop up:
 
 ![image](https://user-images.githubusercontent.com/98178943/154974150-83687620-054f-4bca-a28a-a69cb802809d.png)
+
+To install nginx, construct a playbook, changing the hosts to the name you entered in the hosts file.
