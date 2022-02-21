@@ -493,7 +493,7 @@ We can also automate the upgrade-update process:
       update_cache: yes
 ```
 
-## ULTIMATE AUTOMATION!!
+## Ultimate Automation!
 We can put all of these playbooks in playbooks into ONE playbook that will completely install app and db with one click:
 Playbook name = `master_import_playbooks.yml`
 
@@ -507,3 +507,70 @@ Playbook name = `master_import_playbooks.yml`
 ```
 ![The beauty of DevOps!](https://user-images.githubusercontent.com/98178943/154564715-215163e8-8657-41ff-bb78-8a8fe17dd3ba.png)
 ![ezgif com-gif-maker](https://user-images.githubusercontent.com/98178943/154567191-b3c8ead2-d0aa-4b81-9b6a-913ffa5ceb59.gif)
+
+
+## Ansible hybrid deployment
+
+Make fresh vm and update/upgrade
+- `sudo apt-add-repository --yes --update ppa:ansible/ansible` adds ansible folder
+- `sudo apt-get install ansible`
+- `sudo apt-get install python3-pip` install python 3
+- `pip3 install awscli`
+- `pip3 install boto boto3`
+- `aws --version`
+- `cd /etc/ansible`
+- Create a group_vars folder and then an `all` folder inside it. (directory /etc/ansible/group_vars/all$)
+- `sudo ansible-vault create pass.yml`
+- Enter `ii` to enter insert mode, enter your access and secret keys as:
+```
+aws_access_key:
+aws_secret_key:
+```
+- Save the file by pressing `esc` and typing `:wq!`
+- `sudo cat pass.yml` to view contents
+![image](https://user-images.githubusercontent.com/98178943/154943905-65b2fce5-1ce5-4426-a2fe-59f4f7c9b60b.png)
+- `sudo chmod 600 pass.yml` gives required permission to read
+- `sudo ansible all -m ping --ask-vault-pass`, here we are checking if it is working and it is verifying the keys we have entered
+
+We have created a secure authentication method using ansible for hybrid cloud.
+
+We have provided aws credentials that were encrypted, so we did not need to expose the keys at any stage.
+
+We also need to copy our pem file into the .ssh folder in the controller to access the EC2 instance.
+
+Create a playbook called `ec2.yml`
+```
+---
+- hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars_files:
+  - /etc/ansible/group_vars/all/pass.yml
+  tasks:
+  - ec2:
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+      key_name: pem file name
+      instance_type: t2.micro
+      image: ami-01d45cfaa26f10388
+      wait: yes
+      group: eng103a_name
+      region: "eu-west-1"
+      count: 1
+      vpc_subnet_id: subnet-xxxxxx
+      assign_public_ip: yes
+      instance_tags:
+        Name: Yacob
+        os: ubuntu
+```
+Enter `sudo ansible-playbook start_ec2.yml --connection=local -e "ansible_python_interpreter=/usr/bin/python3" --ask-vault-pass`
+
+Once that is done, we can edit the hosts file to ssh into the instance we made.
+An example:
+```
+[aws]
+54.74.xx.xx ssh_connection=ssh ansible_user=ubuntu ansible_ssh_private_key_file=/etc/ansible/.ssh/filename.pem
+```
+
+To test the connection, enter:
+`sudo ansible aws -m ping --ask-vault-pass`
