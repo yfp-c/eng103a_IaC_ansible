@@ -574,3 +574,7 @@ An example:
 
 To test the connection, enter:
 `sudo ansible aws -m ping --ask-vault-pass`
+
+This image should pop up:
+
+![image](https://user-images.githubusercontent.com/98178943/154974150-83687620-054f-4bca-a28a-a69cb802809d.png)
