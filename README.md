@@ -381,6 +381,26 @@ Check the status of mongod by doing `ansible db -a "systemctl status mongodb"`
      service: name=mongodb enabled=yes
 ```
 
+## Optionally put it all into one for mongod
+```
+---
+- hosts: db
+  gather_facts: yes
+  become: true
+# install mongodb in db instance and ensure it's running
+  tasks:
+  - name: installing mongo pre-requisites
+    apt: pkg=mongodb state=present
+  - name: allow 0.0.0.0
+    ansible.builtin.lineinfile:
+      path: /etc/mongodb.conf
+      regexp: '^bind_ip = '
+      insertafter: '^#bind_ip = '
+      line: bind_ip = 0.0.0.0
+  - name: restart and enable mongod
+    service: name=mongodb state=restarted enabled=yes
+```
+
 ## Add reverse proxy to web app
 ```
 
@@ -600,6 +620,8 @@ Create a playbook called `ec2.yml`
 
 ```
 Enter `sudo ansible-playbook ec2.yml --ask-vault-pass --tags create_ec2 --tags=ec2-create -e "ansible_python_interpreter=/usr/bin/python3"`
+
+or `sudo ansible-playbook start_ec2.yml --connection=local -e "ansible_python_interpreter=/usr/bin/python3" --ask-vault-pass`
 
 Once that is done, we can edit the hosts file to ssh into the instance we made.
 An example:
