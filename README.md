@@ -638,3 +638,84 @@ This image should pop up:
 ![image](https://user-images.githubusercontent.com/98178943/154974150-83687620-054f-4bca-a28a-a69cb802809d.png)
 
 To install nginx, construct a playbook, changing the hosts to the name you entered in the hosts file.
+
+## Creating an Ansible controller on AWS
+
+Follow the commands from setting up an Ansible controller.
+
+Enter into /home/ubuntu/.ssh and enter `ssh-keygen -t rsa -b 4096` to generate the pub and private keys which we'll need later on.
+
+To launch the app and db instances I entered the code below:
+
+APP:
+```yml
+---
+- hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars_files:
+  - /etc/ansible/group_vars/all/pass.yml
+  vars:
+    ec2_instance_name: eng103a-yacob-ansible-app
+    ec2_sg_name: eng103a_yacob_vpc_app
+    ec2_pem_name: eng103a
+  tasks:
+  - ec2_key:
+      name: "{{ec2_pem_name}}"
+      key_material: "{{ lookup('file', '/home/ubuntu/.ssh/id_rsa.pub') }}"
+      region: "eu-west-1"
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+  - ec2:
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+      key_name: "{{ec2_pem_name}}"
+      instance_type: t2.micro
+      image: ami-07d8796a2b0f8d29c
+      wait: yes
+      group: "{{ec2_sg_name}}"
+      region: "eu-west-1"
+      count: 1
+      vpc_subnet_id: subnet-xxxxxxxxxx
+      assign_public_ip: yes
+      instance_tags:
+        Name: "{{ec2_instance_name}}"
+```
+DB:
+```yml
+---
+- hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars_files:
+  - /etc/ansible/group_vars/all/pass.yml
+  vars:
+    ec2_instance_name: eng103a-yacob-ansible-db
+    ec2_sg_name: eng103a_yacob_vpc_db_sg
+    ec2_pem_name: eng103a
+  tasks:
+  - ec2_key:
+      name: "{{ec2_pem_name}}"
+      key_material: "{{ lookup('file', '/home/ubuntu/.ssh/id_rsa.pub') }}"
+      region: "eu-west-1"
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+  - ec2:
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+      key_name: "{{ec2_pem_name}}"
+      instance_type: t2.micro
+      image: ami-07d8796a2b0f8d29c
+      wait: yes
+      group: "{{ec2_sg_name}}"
+      region: "eu-west-1"
+      count: 1
+      vpc_subnet_id: subnet-xxxxxxxxxxxxxx
+      assign_public_ip: yes
+      instance_tags:
+        Name: "{{ec2_instance_name}}"
+```
+
+To launch these instances enter `sudo ansible-playbook start_ec2.yml --connection=local -e "ansible_python_interpreter=/usr/bin/python3" --ask-vault-pass`
+
+Note: when running the playbooks, we need to make sure we set user to ubuntu and to set the paths to ubuntu before executing the playbooks.
