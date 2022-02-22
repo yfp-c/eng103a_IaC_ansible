@@ -645,6 +645,8 @@ Follow the commands from setting up an Ansible controller.
 
 Enter into /home/ubuntu/.ssh and enter `ssh-keygen -t rsa -b 4096` to generate the pub and private keys which we'll need later on.
 
+Ensure that you use your public vpc and subnet to enable internet access to db and app.
+
 To launch the app and db instances I entered the code below:
 
 APP:
