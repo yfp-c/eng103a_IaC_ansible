@@ -721,3 +721,102 @@ DB:
 To launch these instances enter `sudo ansible-playbook start_ec2.yml --connection=local -e "ansible_python_interpreter=/usr/bin/python3" --ask-vault-pass`
 
 Note: when running the playbooks, we need to make sure we set user to ubuntu and to set the paths to ubuntu before executing the playbooks.
+
+
+# Using Jenkins to run playbooks
+If you want to start from scratch, enter the commands:
+```yml
+sudo apt-get update -y && sudo apt-get upgrade -y
+sudo apt install software-properties-common -y
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt install openjdk-8-jre -y
+wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+sudo apt-get update -y
+sudo apt-get install jenkins -y
+sudo systemctl start jenkins
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+Select plugins, SSH Agent, NodeJS, Git Parameter, GitHub, SSH
+```
+
+-Install ansible, EC2 and yaml plugins
+Go to global node configuration:
+
+![image](https://user-images.githubusercontent.com/98178943/155736356-8a853e06-05f6-4c0c-a149-289122af60cd.png)
+
+Enter back into the VM
+```yml
+sudo apt install python3.9 -y
+sudo su jenkins
+update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+python --version # check python version
+exit out of jenkins
+sudo apt-get install python3-pip -y
+sudo pip3 install awscli boto3 boto3
+sudo apt-add-repository ppa:ansible/ansible
+sudo apt-get install ansible -y
+```
+Create the ansible vault with your AWS keys.
+
+In your group vars folder, enter:
+```yml 
+sudo chown jenkins:jenkins pass.yml
+ansible-galaxy collection install amazon.aws
+scp -i "~/.ssh/keyname.pem" -r app/ ubuntu@ipaddress:~ # copy app folder
+sudo su jenkins
+cd ~
+mkdir .ssh
+ssh-keygen -t rsa -b 4096
+```
+
+Create three jobs.
+
+One job to run the playbook to build the app and db instances on AWS. 
+
+One of the playbacks will look like this:
+```yml
+---
+- hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars_files:
+  - /etc/ansible/group_vars/all/pass.yml
+  vars:
+    ec2_instance_name: eng103a-yacob-ansible-app
+    ec2_sg_name: eng103a_yacob_vpc_app
+    ec2_pem_name: id_rsa
+  tasks:
+  - ec2_key:
+      name: "{{ec2_pem_name}}"
+      key_material: "{{ lookup('file', '~.ssh/id_rsa.pub') }}"
+      region: "eu-west-1"
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+  - ec2:
+      aws_access_key: "{{aws_access_key}}"
+      aws_secret_key: "{{aws_secret_key}}"
+      key_name: "{{ec2_pem_name}}"
+      instance_type: t2.micro
+      image: ami-07d8796a2b0f8d29c
+      wait: yes
+      group: "{{ec2_sg_name}}"
+      region: "eu-west-1"
+      count: 1
+      vpc_subnet_id: subnet-xxxxxxxxxx
+      assign_public_ip: yes
+      instance_tags:
+        Name: "{{ec2_instance_name}}"
+  tags: ['never', 'create_ec2']
+```
+
+To ping the instances, sudo su jenkins and enter the commands.
+
+On jenkins jobs, your layout should include the vault password:
+
+![asfas](https://cdn.discordapp.com/attachments/388052671048843276/946886074616139906/unknown.png)
+
+![ewgtgh](https://cdn.discordapp.com/attachments/388052671048843276/946886273686179921/unknown.png)
+
+For the remaining jobs to configure the app and db instances using playbooks, you'll need to refer to the hosts file as seen below.
+
+![asfsa1](https://cdn.discordapp.com/attachments/388052671048843276/946887044066607104/unknown.png)
