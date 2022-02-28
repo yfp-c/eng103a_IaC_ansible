@@ -529,9 +529,7 @@ Playbook name = `master_import_playbooks.yml`
 ![ezgif com-gif-maker](https://user-images.githubusercontent.com/98178943/154567191-b3c8ead2-d0aa-4b81-9b6a-913ffa5ceb59.gif)
 
 
-## Ansible hybrid deployment with Jenkins
-
-![jenkins-ansible-diagram](https://user-images.githubusercontent.com/98178943/156023771-bc783bc3-ad2b-4399-93e5-f415944a335e.png)
+## Ansible hybrid deployment
 
 Make fresh vm and update/upgrade
 - `sudo apt-add-repository --yes --update ppa:ansible/ansible` adds ansible folder
@@ -726,6 +724,7 @@ Note: when running the playbooks, we need to make sure we set user to ubuntu and
 
 
 # Using Jenkins to run playbooks
+![jenkins-ansible-diagram](https://user-images.githubusercontent.com/98178943/156023771-bc783bc3-ad2b-4399-93e5-f415944a335e.png)
 If you want to start from scratch, enter the commands:
 ```yml
 sudo apt-get update -y && sudo apt-get upgrade -y
